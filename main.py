@@ -85,21 +85,20 @@ class App:
 
         exif_data = pillow_image.getexif()
         orientation = exif_data.get(274, 1)
-        match orientation:
-            case 2:
-                pillow_image = pillow_image.transpose(Image.FLIP_LEFT_RIGHT)
-            case 3:
-                pillow_image = pillow_image.rotate(180)
-            case 4:
-                pillow_image = pillow_image.transpose(Image.FLIP_TOP_BOTTOM)
-            case 5:
-                pillow_image = pillow_image.transpose(Image.FLIP_LEFT_RIGHT).rotate(90)
-            case 6:
-                pillow_image = pillow_image.rotate(270)
-            case 7:
-                pillow_image = pillow_image.transpose(Image.FLIP_TOP_BOTTOM).rotate(90)
-            case 8:
-                pillow_image = pillow_image.rotate(90)
+        if orientation == 2:
+            pillow_image = pillow_image.transpose(Image.FLIP_LEFT_RIGHT)
+        elif orientation == 3:
+            pillow_image = pillow_image.rotate(180)
+        elif orientation == 4:
+            pillow_image = pillow_image.transpose(Image.FLIP_TOP_BOTTOM)
+        elif orientation == 5:
+            pillow_image = pillow_image.transpose(Image.FLIP_LEFT_RIGHT).rotate(90)
+        elif orientation == 6:
+            pillow_image = pillow_image.rotate(270)
+        elif orientation == 7:
+            pillow_image = pillow_image.transpose(Image.FLIP_TOP_BOTTOM).rotate(90)
+        elif orientation == 8:
+            pillow_image = pillow_image.rotate(90)
         self.image = pygame.image.fromstring(pillow_image.tobytes(), pillow_image.size, pillow_image.mode)
         imW = self.image.get_width()
         imH = self.image.get_height()
@@ -156,13 +155,13 @@ class App:
         os.rename(self.imglist[self.current_image_index], self.imglist[self.current_image_index]+'_MARKED_FOR_DELETION')
 
     def order(self, key):
-        match key.lower().strip():
-            case 'asc':
-                self.imglist.sort()
-            case 'desc':
-                self.imglist.sort(reverse=True)
-            case 'shuffle':
-                random.shuffle(self.imglist)
+        key = key.lower().strip()
+        if key == 'asc':
+            self.imglist.sort()
+        elif key == 'desc':
+            self.imglist.sort(reverse=True)
+        elif key == 'shuffle':
+            random.shuffle(self.imglist)
         self.current_image_index = 0
 
 
@@ -173,37 +172,35 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
         op = ""
         global app
         d = data.split()[0].strip()
-
-        match d:
-            case 'display_name':
-                app.display_name()
-                op = app.displayName
-            case 'next':
-                app.next()
-                op = ''
-            case 'prev':
-                app.prev()
-                op = ''
-            case 'delay':
-                app.set_delay(float(data.split()[1].strip()))
-                op = ''
-            case 'order':
-                app.order(' '.join(data.split()[1:]))
-                op = ''
-            case 'delete':
-                app.delete_photo()
-                op = ''
-            case 'pause':
-                app.set_delay(9999999)
-                op = ''
-            case 'resume':
-                app.set_delay(app.duration_config)
-            case 'identify':
-                hostname = s.gethostname()
-                op = f'{app.name}: Version {app.version} Running on {hostname}'
-            case 'exit':
-                print('EXITING...')
-                sys.exit(0)
+        if d == 'display_name':
+            app.display_name()
+            op = app.displayName
+        elif d == 'next':
+            app.next()
+            op = ''
+        elif d == 'prev':
+            app.prev()
+            op = ''
+        elif d == 'delay':
+            app.set_delay(float(data.split()[1].strip()))
+            op = ''
+        elif d == 'order':
+            app.order(' '.join(data.split()[1:]))
+            op = ''
+        elif d == 'delete':
+            app.delete_photo()
+            op = ''
+        elif d == 'pause':
+            app.set_delay(9999999)
+            op = ''
+        elif d == 'resume':
+            app.set_delay(app.duration_config)
+        elif d == 'identify':
+            hostname = s.gethostname()
+            op = f'{app.name}: Version {app.version} Running on {hostname}'
+        elif d == 'exit':
+            print('EXITING...')
+            sys.exit(0)
         socket.sendto(bytes(f'RECV {data} {op}', 'utf-8'), self.client_address)
 
 def start_udp_server():
