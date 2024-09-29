@@ -78,7 +78,11 @@ class App:
             try:
                 pillow_image = Image.open(self.imglist[self.current_image_index])
                 break
-            except (FileNotFoundError, PermissionError) as e:
+            except PermissionError as e:
+                i = self.imglist.pop(self.current_image_index)
+                print(f'REMOVED {i} BECAUSE {e}')
+                self.current_image_index = self.current_image_index % len(self.imglist)
+            except FileNotFoundError as e:
                 i = self.imglist.pop(self.current_image_index)
                 print(f'REMOVED {i} BECAUSE {e}')
                 self.current_image_index = self.current_image_index % len(self.imglist)
