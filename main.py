@@ -1,6 +1,5 @@
 import os
 import sys
-
 import pygame
 import random
 import socket as s
@@ -79,8 +78,9 @@ class App:
             try:
                 pillow_image = Image.open(self.imglist[self.current_image_index])
                 break
-            except FileNotFoundError:
-                self.imglist.pop(self.current_image_index)
+            except (FileNotFoundError, PermissionError) as e:
+                i = self.imglist.pop(self.current_image_index)
+                print(f'REMOVED {i} BECAUSE {e}')
                 self.current_image_index = self.current_image_index % len(self.imglist)
 
         exif_data = pillow_image.getexif()
