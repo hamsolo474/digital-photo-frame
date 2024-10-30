@@ -24,12 +24,12 @@ pub fn main() !void {
     // imPathGetter.zig:22:22: error: expected error union type, found '?[]const u8'
     // while (try b.next()) |line| {
     // ~~~~~~^~
-    while (b.next()) |line| {
+    while (b.next()) |line| { // iterate over the lines in the file
         // try folderList.append(line);
         // print("'{s}'\n", .{line});
         if (line.len == 0) {break;}
         var iter = (std.fs.openDirAbsolute(
-            line,
+            line, // Open the path on the current line of the document
             .{ .iterate = true },
         ) catch {
             print("Skipping {s}\n",.{line});
@@ -38,16 +38,20 @@ pub fn main() !void {
         while (try iter.next()) |entry|{
             if (entry.kind == .file){
                 if (try supportedExtension(entry.name)){
-                    try picList.append(entry.name);
+                    // Copy the memory!
+                    const copied = try allocator.alloc(u8, entry.name);
+                    try picList.append(copied);
+                    print("Appended {s}\n", .{copied});
+                    print("List contents {s}\n", .{picList.items[picListLen]});
                     picListLen += 1;
-                    // print("Appended {s}\n", .{entry.name});
                 }
             }
         }
     }
     var count: usize = 0;
-    for (picList.items) |item| {
-         std.debug.print("{d}) {s}\n", .{count, item});
+    // for (picList.items) |item| {
+    while (count < picListLen) {
+        std.debug.print("{d}) {s}\n", .{count, picList.items[count]});
         count += 1;
     }
     print("picList len: {d}\n", .{picListLen});

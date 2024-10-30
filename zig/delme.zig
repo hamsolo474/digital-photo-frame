@@ -1,73 +1,38 @@
 const std = @import("std");
 const print = std.debug.print;
-const eql = std.mem.eql;
 
 pub fn main() !void {
-    const a: u8 = 'a';
-    const A:u8  = 'A';
-    const dot:u8  = '.';
-    print("a is {d}, A is {d}, diff is {d}, a - 32 = {c}, fullstop is {d}\n",
-        .{a, A, a-A, a-32, dot});
-    // const extension = extensionSlice;
-    // const check = extension("amy.jpg", ".jpg");
-    const check = supportedExtension("amy.jpg");
-    if (check) {
-        print("Success!",.{});
-    }
-    print("{any}.\n", .{check});
-}
-
-fn supportedExtension(filename : []const u8) bool{
+    var file = try std.fs.cwd().openFile("/home/ham/Pictures/paths.txt", .{});
+    defer file.close();
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
-    var extensions = std.ArrayList([]const u8).init(allocator);
-    defer extensions.deinit();
-    extensions.append(".jpeg") catch return false;
-    extensions.append(".JPEG") catch return false;
-    extensions.append(".jpg") catch return false;
-    extensions.append(".JPG") catch return false;
-    extensions.append(".png") catch return false;
-    extensions.append(".PNG") catch return false;
-    extensions.append(".bmp") catch return false;
-    extensions.append(".BMP") catch return false;
-
-    for (extensions.items) |i| {
-        const check = extensionSlice(filename, i);
-        if (check) {
-            return true;
+    const a = try file.readToEndAlloc(allocator, std.math.maxInt(usize));
+    var picList = std.ArrayList([]const u8).init(allocator);
+    defer picList.deinit();
+    var picListLen: usize = 0;
+    var b= std.mem.splitSequence(u8, a, "\n");
+    while (b.next()) |line| { // iterate over the lines in the file
+        if (line.len == 0) {break;} //skip newline at the end of file
+        var iter = (std.fs.openDirAbsolute( // Opens the folder like ls and returns an iterator of each object found
+            line, // Open the path on the current line of the document
+            .{ .iterate = true },
+        ) catch {
+            // print("Skipped", .{});
+            print("Skipping {s}\n",.{line});
+            continue;
+        }).iterate();
+        while (try iter.next()) |entry| { // for object in folder
+            try picList.append(entry.name);
+            print("Appended {s}\n", .{entry.name});
+            print("List contents {s}\n", .{picList.items[picListLen]});
+            picListLen += 1;
         }
     }
-    return false;
-}
-
-fn extensionSlice(filename : []const u8, target: []const u8) bool{
-    print("Does \"{s}\" contain \"{s}\"?", .{filename, target});
-    if (eql(u8, target,filename[filename.len - target.len..filename.len])){
-        return true;
+    var count: usize = 0;
+    while (count < picListLen) {
+        std.debug.print("{d}) {s}\n", .{count, picList.items[count]});
+        count += 1;
     }
-    else {
-        return false;
-    }
-}
-
-fn extensionChar(filename : []const u8, target: []const u8) bool{
-    print("Does \"{s}\"contain \"{s}\"? ", .{filename, target});
-    // I want to do an r.find on the string and see if the target is at the end of the string
-    var i: usize = 1;
-    while (i <= target.len):(i += 1)  {
-        print("{d} - {d} \n",.{filename.len, i});
-        var fc = filename[filename.len - i];
-        if (fc < 64 and fc > 91) { // is upper case
-            fc -= 32; //converts to lower case
-        }
-        var tc = target[target.len - i];
-        if (tc < 64 and tc > 91) { // is upper case
-            tc -= 32; //converts to lower case
-        }
-        print("{c} == {c}? {any}\n", .{tc, fc, tc==fc});
-        if (tc != fc){
-            return false;
-        }
-    }
-    return true;
+    print("picList len: {d}\n", .{picListLen});
+    std.debug.print("Index 1: {s}\n",.{picList.items[1]});
 }
