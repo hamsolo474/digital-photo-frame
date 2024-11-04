@@ -3,10 +3,8 @@ const sdl_image = @cImport({@cInclude("SDL2/SDL_image.h");});
 const assert = @import("std").debug.assert;
 
 pub fn main() !void {
-    const imagePaths: []const u8 = &[_]const u8{"imgs/one.bmp",
-        "imgs/two.bmp",
-        "imgs/three.bmp"};
-    imagePaths[0];
+    // const imagePaths: []const u8 = "screenshot1.png";
+    // imagePaths[0];
     if (sdl.SDL_Init(sdl.SDL_INIT_VIDEO) != 0) {
         sdl.SDL_Log("Unable to initialize SDL: %s", sdl.SDL_GetError());
         return error.SDLInitializationFailed;

@@ -9,12 +9,13 @@ pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     const a = try file.readToEndAlloc(allocator, std.math.maxInt(usize));
-    var folderList = std.ArrayList([]const u8).init(allocator);
-    defer folderList.deinit();
     var picList = std.ArrayList([]const u8).init(allocator);
     defer picList.deinit();
     var picListLen: usize = 0;
-    var b= std.mem.splitSequence(u8, a, "\n");
+    var b = std.mem.splitSequence(u8, a, "\n");
+    // I need to intialise this here so its not potenntial unitiliased later
+    var fullVal = try std.fmt.allocPrint(allocator, "", .{});
+    defer allocator.free(fullVal);
     // Read through all the lines in the file
     // These lines contain paths separated by \n
     // Try to open the paths and find all image files
@@ -25,8 +26,6 @@ pub fn main() !void {
     // while (try b.next()) |line| {
     // ~~~~~~^~
     while (b.next()) |line| { // iterate over the lines in the file
-        // try folderList.append(line);
-        // print("'{s}'\n", .{line});
         if (line.len == 0) {break;}
         var iter = (std.fs.openDirAbsolute(
             line, // Open the path on the current line of the document
@@ -38,10 +37,14 @@ pub fn main() !void {
         while (try iter.next()) |entry|{
             if (entry.kind == .file){
                 if (try supportedExtension(entry.name)){
-                    // Copy the memory!
-                    const copied = try allocator.alloc(u8, entry.name);
-                    try picList.append(copied);
-                    print("Appended {s}\n", .{copied});
+                    // So if i dont do this, the memory goes out of scope when i try to access it later
+                    fullVal = try std.fmt.allocPrint(
+                        allocator,
+                        "{s}/{s}",
+                        .{line, entry.name}
+                    );
+                    try picList.append(fullVal);
+                    print("Appended {s}\n", .{entry.name});
                     print("List contents {s}\n", .{picList.items[picListLen]});
                     picListLen += 1;
                 }
