@@ -64,7 +64,7 @@ class App:
             font = pygame.font.Font(None, 36)
             text = font.render(self.imglist[self.current_image_index].split(os.sep)[-1] if self.displayName else "",
                                True, (255, 255, 255))
-            self.screen.blit(text, (0, 0))
+            self.screen.blit(text, self.deadZone)
             pygame.display.flip()
             # Cap the framerate
             self.clock.tick(100)
@@ -78,11 +78,7 @@ class App:
             try:
                 pillow_image = Image.open(self.imglist[self.current_image_index])
                 break
-            except PermissionError as e:
-                i = self.imglist.pop(self.current_image_index)
-                print(f'REMOVED {i} BECAUSE {e}')
-                self.current_image_index = self.current_image_index % len(self.imglist)
-            except FileNotFoundError as e:
+            except (FileNotFoundError, PermissionError) as e:
                 i = self.imglist.pop(self.current_image_index)
                 print(f'REMOVED {i} BECAUSE {e}')
                 self.current_image_index = self.current_image_index % len(self.imglist)
@@ -107,8 +103,8 @@ class App:
         imW = self.image.get_width()
         imH = self.image.get_height()
         # Handles both scaling up and down???
-        scale_factor = min((self.res[0]) / imW,
-                           (self.res[1]) / imH)
+        scale_factor = min((self.res[0]) / imW-(self.deadZone[0]*2),
+                           (self.res[1]) / imH-(self.deadZone[1]*2))
         self.image = pygame.transform.scale(self.image, (int(imW * scale_factor), int(imH * scale_factor)))
         if self.orientation_lock:  # Filter images of the wrong orientation
             if imW > imH and self.orientation == 'portrait':
@@ -140,12 +136,15 @@ class App:
         self.duration = float(config.get('Settings', 'SlideDuration', fallback=10))
         self.duration_config = self.duration
         self.displayName = True if config.get('Settings', 'ShowFileName').upper() == 'TRUE' else False
+        deadZoneX = int(config.get('Settings', 'DeadzoneX', fallback=0))
+        deadZoneY = int(config.get('Settings', 'DeadzoneY', fallback=0))
+        self.deadZone = (deadZoneX, deadZoneY)
         self.orientation_lock = True if config.get('Settings', 'OrientationLock').upper() == 'TRUE' else False
         self.orientation = config.get('Settings', 'ScreenOrientation').lower()
         if self.orientation not in ['portrait', 'landscape']:
             self.orientation = 'landscape' if self.res[0] > self.res[1] else 'portrait'  # Auto
         self.port = int(config.get('Settings', 'ListenPort', fallback=9999))
-        self.interface = config.get('Settings', 'ListenInterface', fallback='localhost')
+        self.interface = config.get('Settings', 'ListenInterface', fallback='')
         counter = 0
         while True:
             path = config.get('Settings', f'PhotoPath{counter}', fallback=None)
@@ -209,6 +208,7 @@ class MyUDPHandler(socketserver.BaseRequestHandler):
 
 def start_udp_server():
     with socketserver.UDPServer((app.interface, app.port), MyUDPHandler) as server:
+        print(f'UDP LISTENER RUNNING ON: {app.interface}:{app.port}')
         server.serve_forever()
 
 if __name__ == '__main__':
