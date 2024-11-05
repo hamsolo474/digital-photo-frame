@@ -6,7 +6,7 @@ pub fn build(b: *Builder) void {
 
     const exe = b.addExecutable(.{
         .name = "sdl-zig-demo",
-        .root_source_file =  b.path("src/main.zig"),
+        .root_source_file =  b.path("sdl/main.zig"),
         .target = target,
         .optimize = optimize,
     });
